@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #0a0f1e;
+      --surface: #111827;
+      --border:  #1e293b;
+      --accent:  #3b82f6;
+      --purple:  #7c3aed;
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --easy:    #10b981;
+      --medium:  #f59e0b;
+      --hard:    #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 300px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600; font-size: 13px; color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(59,130,246,0.3);
+    }
+    .header-text { flex: 1; }
+    .brand   { font-size: 13px; font-weight: 600; letter-spacing: 0.2px; }
+    .tagline { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .counter-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; font-weight: 600;
+      background: var(--border);
+      color: var(--accent);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 4px;
+      padding: 2px 7px; min-width: 28px; text-align: center;
+    }
+
+    /* Last exported strip */
+    .last-synced {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px; color: var(--muted);
+      min-height: 30px;
+    }
+    .last-synced.hidden { display: none; }
+    .ls-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--easy); flex-shrink: 0; }
+    .ls-title {
+      color: var(--text); font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px;
+    }
+    .ls-time { margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+
+    /* Problem preview */
+    .problem-preview {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      display: none; align-items: center; gap: 8px;
+    }
+    .problem-preview.visible { display: flex; }
+    .preview-title {
+      font-size: 11px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+    }
+    .diff-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 600;
+      padding: 2px 7px; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;
+    }
+    .diff-badge.EASY   { background: rgba(16,185,129,0.12); color: var(--easy);   border: 1px solid rgba(16,185,129,0.25); }
+    .diff-badge.MEDIUM { background: rgba(245,158,11,0.12);  color: var(--medium); border: 1px solid rgba(245,158,11,0.25); }
+    .diff-badge.HARD   { background: rgba(239,68,68,0.12);   color: var(--hard);   border: 1px solid rgba(239,68,68,0.25); }
+
+    /* Steps */
+    .steps { padding: 12px 16px; display: flex; flex-direction: column; gap: 7px; }
+    .step {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; color: var(--muted);
+      transition: color 0.25s;
+    }
+    .step.active { color: var(--text); }
+    .step.done   { color: var(--easy); }
+    .step.error  { color: var(--hard); }
+
+    .step-icon {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0; transition: all 0.25s; position: relative;
+    }
+    .step.active .step-icon { border-color: var(--accent); background: rgba(59,130,246,0.08); }
+    .step.done   .step-icon { border-color: var(--easy);   background: rgba(16,185,129,0.1);  }
+    .step.error  .step-icon { border-color: var(--hard);   background: rgba(239,68,68,0.1);   }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 10px; height: 10px;
+      border: 1.5px solid var(--accent);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none; position: absolute;
+    }
+    .step.active .spinner  { display: block; }
+    .step.active .step-num { display: none; }
+
+    .step-label { flex: 1; }
+    .step-detail { font-size: 9px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    /* Error box */
+    .error-detail {
+      margin: 0 16px 10px;
+      padding: 8px 10px;
+      background: rgba(239,68,68,0.07);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 5px;
+      font-size: 10px; color: #fca5a5;
+      font-family: 'JetBrains Mono', monospace;
+      display: none; line-height: 1.5;
+    }
+    .error-detail.visible { display: block; }
+
+    /* Button */
+    .btn-wrap { padding: 4px 16px 14px; }
+    .sync-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #fff; border: none;
+      padding: 10px 14px;
+      font-size: 12px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      border-radius: 7px; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s, background 0.3s;
+      box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+      letter-spacing: 0.2px;
+    }
+    .sync-btn:hover:not(:disabled)  { opacity: 0.9; transform: translateY(-1px); }
+    .sync-btn:active:not(:disabled) { transform: translateY(0); }
+    .sync-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
+    @keyframes successPulse {
+      0%   { box-shadow: 0 0 0 0    rgba(16,185,129,0.5); }
+      70%  { box-shadow: 0 0 0 10px rgba(16,185,129,0);   }
+      100% { box-shadow: 0 0 0 0    rgba(16,185,129,0);   }
+    }
+    .sync-btn.success {
+      background: linear-gradient(135deg, #059669, #10b981) !important;
+      animation: successPulse 0.7s ease-out;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">M</div>
+    <div class="header-text">
+      <div class="brand">Mind Palace — PDF Export</div>
+      <div class="tagline">Standalone · no backend required</div>
+    </div>
+    <div class="counter-badge" id="counterBadge">—</div>
+  </div>
+
+  <div class="last-synced hidden" id="lastSynced">
+    <div class="ls-dot"></div>
+    <span class="ls-title" id="lsTitle"></span>
+    <span class="ls-time"  id="lsTime"></span>
+  </div>
+
+  <div class="problem-preview" id="problemPreview">
+    <span class="preview-title" id="previewTitle"></span>
+    <span class="diff-badge"    id="previewDiff"></span>
+  </div>
+
+  <div class="steps">
+    <div class="step" id="step1">
+      <div class="step-icon"><span class="step-num">1</span><div class="spinner"></div></div>
+      <span class="step-label">Extract problem data</span>
+      <span class="step-detail" id="step1Detail"></span>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-icon"><span class="step-num">2</span><div class="spinner"></div></div>
+      <span class="step-label">Build PDF layout</span>
+      <span class="step-detail" id="step2Detail"></span>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-icon"><span class="step-num">3</span><div class="spinner"></div></div>
+      <span class="step-label">Download PDF</span>
+      <span class="step-detail" id="step3Detail"></span>
+    </div>
+  </div>
+
+  <div class="error-detail" id="errorDetail"></div>
+
+  <div class="btn-wrap">
+    <button id="syncBtn" class="sync-btn">Extract & Export PDF</button>
+  </div>
+
+  <!-- jsPDF bundled locally — MV3 CSP blocks CDN scripts -->
+  <script src="jspdf.umd.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
